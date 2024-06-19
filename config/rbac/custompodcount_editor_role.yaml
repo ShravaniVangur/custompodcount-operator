@@ -1,0 +1,31 @@
+# permissions for end users to edit custompodcounts.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: custompodcount-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: custompodcount-operator
+    app.kubernetes.io/part-of: custompodcount-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: custompodcount-editor-role
+rules:
+- apiGroups:
+  - api.example.com
+  resources:
+  - custompodcounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - api.example.com
+  resources:
+  - custompodcounts/status
+  verbs:
+  - get

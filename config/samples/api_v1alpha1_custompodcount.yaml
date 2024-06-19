@@ -1,0 +1,7 @@
+apiVersion: api.example.com/v1alpha1
+kind: Custompodcount
+metadata:
+  name: custompodcount
+
+spec:
+  sizepod: 3
