@@ -70,7 +70,7 @@ func (r *CustompodcountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	podName := "custompod-count"
 
 	//Step 2: retrieve the total number of pods running
-	currentPodCount, err := r.countPods(ctx, podNamespace, podName)
+	podList, currentPodCount, err := r.countPods(ctx, podNamespace, podName)
 	if err != nil {
 		log.Error(err, "Failed to count pods")
 		return ctrl.Result{}, err
@@ -78,7 +78,7 @@ func (r *CustompodcountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	expectedPodCount := custompodcount.Spec.SizePod
 
-	//Step 3: check if the number differs
+	//Step 3: if existing pods are lower than required -> create
 	if int32(currentPodCount) < expectedPodCount {
 		for i := int32(currentPodCount); i < expectedPodCount; i++ {
 			pod := &corev1.Pod{
@@ -103,11 +103,22 @@ func (r *CustompodcountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				return ctrl.Result{}, err
 			}
 		}
+		//Step 4: if existing pods are higher than required -> delete
+	} else if int32(currentPodCount) > expectedPodCount {
+
+		for i := expectedPodCount; i < int32(currentPodCount); i++ {
+			pod := &podList.Items[i]
+			if err := r.Delete(ctx, pod); err != nil {
+				log.Error(err, "Failed to delete pod", "pod", pod.Name)
+				return ctrl.Result{}, err
+			}
+
+		}
 	}
 	return ctrl.Result{RequeueAfter: time.Minute}, nil
 }
 
-func (r *CustompodcountReconciler) countPods(ctx context.Context, namespace, prefix string) (int, error) {
+func (r *CustompodcountReconciler) countPods(ctx context.Context, namespace, prefix string) (*corev1.PodList, int, error) {
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(namespace),
@@ -115,10 +126,10 @@ func (r *CustompodcountReconciler) countPods(ctx context.Context, namespace, pre
 	}
 
 	if err := r.List(ctx, podList, listOpts...); err != nil {
-		return 0, fmt.Errorf("failed to list pods: %v", err)
+		return nil, 0, fmt.Errorf("failed to list pods: %v", err)
 	}
 
-	return len(podList.Items), nil
+	return podList, len(podList.Items), nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

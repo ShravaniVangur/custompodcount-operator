@@ -4,4 +4,4 @@ metadata:
   name: custompodcount
 
 spec:
-  sizepod: 3
+  sizepod: 4
